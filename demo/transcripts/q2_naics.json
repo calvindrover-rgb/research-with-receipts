@@ -1,0 +1,134 @@
+{
+  "question": "Top federal contractors for NAICS 541512 last fiscal year",
+  "status": "ok",
+  "steps": [
+    {
+      "attempt": 1,
+      "code": "import pubdata\n\nresult = pubdata.usaspending_top_recipients(\n    naics=\"541512\",\n    fiscal_year=2026,\n    limit=10\n)\n\npubdata.emit(result)",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "timed_out": false,
+      "result": [
+        {
+          "name": "ACCENTURE FEDERAL SERVICES LLC",
+          "amount": 3042453229.41,
+          "uei": "C47BNA8GM833"
+        },
+        {
+          "name": "GENERAL DYNAMICS INFORMATION TECHNOLOGY, INC.",
+          "amount": 2127558535.61,
+          "uei": "SMNWM6HN79X5"
+        },
+        {
+          "name": "ORACLE HEALTH GOVERNMENT SERVICES, INC.",
+          "amount": 2060156283.0,
+          "uei": "DT2KS3HH5FP5"
+        },
+        {
+          "name": "BOOZ ALLEN HAMILTON INC",
+          "amount": 1782568945.49,
+          "uei": "JCBMLGPE6Z71"
+        },
+        {
+          "name": "DELOITTE CONSULTING LLP",
+          "amount": 1450897650.27,
+          "uei": "CKV2L9GZKJK3"
+        },
+        {
+          "name": "CACI, INC. - FEDERAL",
+          "amount": 1430147351.67,
+          "uei": "N3PBJAVNKF61"
+        },
+        {
+          "name": "SCIENCE APPLICATIONS INTERNATIONAL CORPORATION",
+          "amount": 1344840790.89,
+          "uei": "MMLKPW9JLX64"
+        },
+        {
+          "name": "SALIENT CRGT, INC.",
+          "amount": 1153276818.24,
+          "uei": "Q5LJNF15T2R5"
+        },
+        {
+          "name": "PERATON INC.",
+          "amount": 1010847171.36,
+          "uei": "ZBPQEJVECCT4"
+        },
+        {
+          "name": "LEIDOS, INC.",
+          "amount": 762406209.06,
+          "uei": "UE9QJD4KK1L6"
+        }
+      ],
+      "receipts": [
+        {
+          "url": "https://api.usaspending.gov/api/v2/search/spending_by_category/recipient/",
+          "method": "POST"
+        }
+      ],
+      "blocked": [],
+      "seconds": 0.31
+    }
+  ],
+  "result": [
+    {
+      "name": "ACCENTURE FEDERAL SERVICES LLC",
+      "amount": 3042453229.41,
+      "uei": "C47BNA8GM833"
+    },
+    {
+      "name": "GENERAL DYNAMICS INFORMATION TECHNOLOGY, INC.",
+      "amount": 2127558535.61,
+      "uei": "SMNWM6HN79X5"
+    },
+    {
+      "name": "ORACLE HEALTH GOVERNMENT SERVICES, INC.",
+      "amount": 2060156283.0,
+      "uei": "DT2KS3HH5FP5"
+    },
+    {
+      "name": "BOOZ ALLEN HAMILTON INC",
+      "amount": 1782568945.49,
+      "uei": "JCBMLGPE6Z71"
+    },
+    {
+      "name": "DELOITTE CONSULTING LLP",
+      "amount": 1450897650.27,
+      "uei": "CKV2L9GZKJK3"
+    },
+    {
+      "name": "CACI, INC. - FEDERAL",
+      "amount": 1430147351.67,
+      "uei": "N3PBJAVNKF61"
+    },
+    {
+      "name": "SCIENCE APPLICATIONS INTERNATIONAL CORPORATION",
+      "amount": 1344840790.89,
+      "uei": "MMLKPW9JLX64"
+    },
+    {
+      "name": "SALIENT CRGT, INC.",
+      "amount": 1153276818.24,
+      "uei": "Q5LJNF15T2R5"
+    },
+    {
+      "name": "PERATON INC.",
+      "amount": 1010847171.36,
+      "uei": "ZBPQEJVECCT4"
+    },
+    {
+      "name": "LEIDOS, INC.",
+      "amount": 762406209.06,
+      "uei": "UE9QJD4KK1L6"
+    }
+  ],
+  "report": "## Top Federal Contractors \u2014 NAICS 541512, FY2026\n\nRanked by obligated contract dollars for the most recent completed federal fiscal year (FY2026):\n\n| Rank | Contractor | Obligated Amount | UEI |\n|---:|---|---:|---|\n| 1 | ACCENTURE FEDERAL SERVICES LLC | $3,042,453,229.41 | C47BNA8GM833 |\n| 2 | GENERAL DYNAMICS INFORMATION TECHNOLOGY, INC. | $2,127,558,535.61 | SMNWM6HN79X5 |\n| 3 | ORACLE HEALTH GOVERNMENT SERVICES, INC. | $2,060,156,283.00 | DT2KS3HH5FP5 |\n| 4 | BOOZ ALLEN HAMILTON INC | $1,782,568,945.49 | JCBMLGPE6Z71 |\n| 5 | DELOITTE CONSULTING LLP | $1,450,897,650.27 | CKV2L9GZKJK3 |\n| 6 | CACI, INC. - FEDERAL | $1,430,147,351.67 | N3PBJAVNKF61 |\n| 7 | SCIENCE APPLICATIONS INTERNATIONAL CORPORATION | $1,344,840,790.89 | MMLKPW9JLX64 |\n| 8 | SALIENT CRGT, INC. | $1,153,276,818.24 | Q5LJNF15T2R5 |\n| 9 | PERATON INC. | $1,010,847,171.36 | ZBPQEJVECCT4 |\n| 10 | LEIDOS, INC. | $762,406,209.06 | UE9QJD4KK1L6 |\n\nSource: [1]",
+  "receipts": [
+    {
+      "url": "https://api.usaspending.gov/api/v2/search/spending_by_category/recipient/",
+      "method": "POST"
+    }
+  ],
+  "blocked": []
+}

@@ -7,10 +7,10 @@ LIB = os.path.join(os.path.dirname(HERE), "sandbox")
 TIMEOUT = int(os.environ.get("SANDBOX_TIMEOUT", "45"))
 
 def _parse(stdout, stderr, code, killed=False):
-    out = {"exit_code": code, "stdout": stdout[-6000:], "stderr": stderr[-4000:], "timed_out": killed, "result": None, "receipts": []}
+    out = {"exit_code": code, "stdout": stdout[-6000:], "stderr": stderr[-4000:], "timed_out": killed, "result": None, "receipts": [], "blocked": []}
     for line in stdout.splitlines():
         if line.startswith("@@RESULT@@"):
-            d = json.loads(line[10:]); out["result"], out["receipts"] = d["result"], d["receipts"]
+            d = json.loads(line[10:]); out["result"], out["receipts"], out["blocked"] = d["result"], d["receipts"], d.get("blocked", [])
     out["stdout"] = "\n".join(l for l in out["stdout"].splitlines() if not l.startswith("@@RESULT@@"))
     return out
 
@@ -32,13 +32,15 @@ def _limits():
     resource.setrlimit(resource.RLIMIT_CPU, (TIMEOUT,) * 2)
     os.setsid()
 
+# Local-mode network guard (sandbox/_netguard.py): Docker mode enforces egress at the proxy; locally we enforce it
+# at DNS resolution so raw sockets/urllib/httpx in model-written code can't bypass pubdata's allowlist.
 def run_local(code):
     d = tempfile.mkdtemp(prefix="pra-")
     try:
         f = os.path.join(d, "task.py"); open(f, "w").write(code)
         env = {"PATH": "/usr/bin:/bin", "PYTHONPATH": LIB, "HOME": d}  # no secrets pass through
         try:
-            p = subprocess.run([sys.executable, "-I", "-c", f"import sys; sys.path.insert(0,{LIB!r}); exec(open({f!r}).read())"],
+            p = subprocess.run([sys.executable, "-I", "-c", f"import sys; sys.path.insert(0,{LIB!r}); import _netguard, pubdata; exec(compile(open({f!r}).read(), 'task.py', 'exec'), {{'__name__': '__main__', 'pubdata': pubdata}})"],
                                capture_output=True, text=True, timeout=TIMEOUT, cwd=d, env=env, preexec_fn=_limits)
             return _parse(p.stdout, p.stderr, p.returncode)
         except subprocess.TimeoutExpired as e:

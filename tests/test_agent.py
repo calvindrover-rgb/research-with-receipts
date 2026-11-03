@@ -38,6 +38,29 @@ def test_api():
     assert "Research" in c.get("/").text
 
 @pytest.mark.skipif(not os.environ.get("LIVE"), reason="network")
-def test_live_end_to_end():
+def test_live_end_to_end(monkeypatch):
+    monkeypatch.setenv("LLM_PROVIDER", "openai")  # module default is mock; LIVE must hit the real model
+    assert agent.llm._key(), "set LLM_API_KEY or VULTR_INFERENCE_API_KEY"
     out = agent.run("Which firms with Salmonella recalls hold federal contracts?")
-    assert out["status"] == "ok" and out["receipts"]
+    assert out["status"] == "ok" and out["receipts"], out.get("report")
+    assert out["report"].strip() and "mock model" not in out["report"]
+
+def test_extract_variants():
+    assert agent.extract("text\n```python\nx=1\n```\nmore") == "x=1"
+    assert agent.extract("```py\na=1\n```\n```python\nimport pubdata\npubdata.emit([1])\n```") == "import pubdata\npubdata.emit([1])"
+    assert agent.extract("```python\nx=2\n") == "x=2"  # unterminated fence
+
+def test_empty_content_falls_back(monkeypatch):
+    from app import llm
+    class R:
+        status_code = 200; request = None
+        def raise_for_status(self): pass
+        def json(self): return {"choices": [{"message": {"content": "", "reasoning": "thinking...\n```python\nx=1\n```"}}]}
+    monkeypatch.setenv("LLM_PROVIDER", "openai"); monkeypatch.setenv("LLM_API_KEY", "dummy")
+    monkeypatch.setattr(llm.httpx, "post", lambda *a, **k: R())
+    assert "x=1" in llm.chat([{"role": "user", "content": "q"}])
+    monkeypatch.setenv("LLM_PROVIDER", "mock")
+
+def test_raw_socket_blocked_locally():
+    r = sandbox.run("import urllib.request\nurllib.request.urlopen('http://evil.example.com/x', timeout=5)")
+    assert "BLOCKED by sandbox policy" in r["stderr"]

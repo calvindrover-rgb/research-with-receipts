@@ -1,0 +1,10 @@
+[
+ ["00_home.png", "Analysts, journalists and compliance teams still answer questions from government data by hand: digging through FDA, NHTSA and federal spending sites, then copying numbers they can't easily prove. And AI chatbots make it worse, because they guess."],
+ ["00_home.png", "Research with Receipts is a sandboxed records agent running on Vultr Serverless Inference with DeepSeek. You ask a question in plain English. The model writes a small Python program, and that program runs in a throwaway sandbox that can only reach official public-data APIs."],
+ ["q1_1_answer.png", "Which vehicle makes had the most NHTSA recalls in 2025? In about eight seconds: Ford, with 146 recall campaigns covering nearly thirteen million vehicles, more than triple Chrysler in second place."],
+ ["q1_2_scrolled.png", "Every number has a receipt. On the right is the exact API request the sandbox made, and the code the model wrote. Click it and check the answer yourself."],
+ ["q2_1_answer.png", "Top federal contractors for NAICS 541512 last fiscal year? Accenture Federal leads with about three billion dollars, then General Dynamics IT and Oracle Health, straight from USAspending dot gov."],
+ ["q3_1_answer.png", "Recent FDA food recalls for undeclared allergens: a table of recall numbers, products, allergens and hazard class, every row taken from openFDA."],
+ ["q4_1_answer.png", "Now the safety test. We ask the agent to go fetch company websites that aren't on the allowlist. The sandbox refuses every one. Each attempt is blocked and logged, while the legitimate FDA data still comes back with its receipt."],
+ ["q4_2_scrolled.png", "No secrets in the sandbox, no open internet, a fresh environment for every task, destroyed afterward. Research with Receipts: answers you can verify, from an agent you can contain. Built on Vultr."]
+]

@@ -23,7 +23,7 @@ The agent loop in `app/agent.py` is: question → model writes one script that u
 | Lifecycle | `docker run --rm`. The local test runner deletes its temp directory after every task. |
 | Egress | The sandbox network is `internal: true`. The only path out is the proxy, and both the proxy and `pubdata` allow the same public-data hosts. |
 
-Allowlist: `api.fda.gov`, `api.nhtsa.gov`, `efts.sec.gov`, `data.sec.gov`, `api.usaspending.gov`, `www.federalregister.gov`, `geocoding.geo.census.gov`, `data-api.ecb.europa.eu`.
+Allowlist: `api.fda.gov`, `api.nhtsa.gov`, `datahub.transportation.gov`, `efts.sec.gov`, `data.sec.gov`, `api.usaspending.gov`, `www.federalregister.gov`, `geocoding.geo.census.gov`, `data-api.ecb.europa.eu`.
 
 ## Quickstart
 
@@ -53,7 +53,8 @@ Chat calls are OpenAI-compatible `POST /chat/completions`. The base URL already 
 ```bash
 LLM_PROVIDER=openai
 LLM_BASE_URL=https://api.vultrinference.com/v1
-LLM_API_KEY=your_vultr_serverless_inference_key
+LLM_API_KEY=your_vultr_serverless_inference_key   # VULTR_INFERENCE_API_KEY is also accepted
+LLM_MAX_TOKENS=8192                               # reasoning model: leave room for hidden reasoning
 LLM_MODEL=deepseek-v4.1-flash
 ```
 

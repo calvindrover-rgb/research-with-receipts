@@ -1,0 +1,115 @@
+1
+00:00:00,000 --> 00:00:05,988
+Analysts, journalists and compliance teams still answer questions from government data by hand:
+
+2
+00:00:06,038 --> 00:00:12,955
+digging through FDA, NHTSA and federal spending sites, then copying numbers they can't easily prove.
+
+3
+00:00:13,005 --> 00:00:17,135
+And AI chatbots make it worse, because they guess.
+
+4
+00:00:17,185 --> 00:00:23,572
+Research with Receipts is a sandboxed records agent running on Vultr Serverless Inference with DeepSeek.
+
+5
+00:00:23,622 --> 00:00:26,576
+You ask a question in plain English.
+
+6
+00:00:26,626 --> 00:00:32,583
+The model writes a small Python program, and that program runs in a throwaway
+
+7
+00:00:32,633 --> 00:00:36,016
+sandbox that can only reach official public-data APIs.
+
+8
+00:00:36,066 --> 00:00:41,072
+Which vehicle makes had the most NHTSA recalls in 2025?
+
+9
+00:00:41,122 --> 00:00:43,095
+In about eight seconds:
+
+10
+00:00:43,145 --> 00:00:50,173
+Ford, with 146 recall campaigns covering nearly thirteen million vehicles, more than triple Chrysler
+
+11
+00:00:50,223 --> 00:00:51,690
+in second place.
+
+12
+00:00:51,740 --> 00:00:53,328
+Every number has a receipt.
+
+13
+00:00:53,378 --> 00:00:57,912
+On the right is the exact API request the sandbox made, and the code
+
+14
+00:00:57,962 --> 00:00:58,895
+the model wrote.
+
+15
+00:00:58,945 --> 00:01:01,187
+Click it and check the answer yourself.
+
+16
+00:01:01,237 --> 00:01:04,931
+Top federal contractors for NAICS 541512 last fiscal year?
+
+17
+00:01:04,981 --> 00:01:10,753
+Accenture Federal leads with about three billion dollars, then General Dynamics IT and Oracle
+
+18
+00:01:10,803 --> 00:01:13,249
+Health, straight from USAspending dot gov.
+
+19
+00:01:13,299 --> 00:01:16,627
+Recent FDA food recalls for undeclared allergens:
+
+20
+00:01:16,677 --> 00:01:23,864
+a table of recall numbers, products, allergens and hazard class, every row taken from openFDA.
+
+21
+00:01:23,914 --> 00:01:25,552
+Now the safety test.
+
+22
+00:01:25,602 --> 00:01:31,458
+We ask the agent to go fetch company websites that aren't on the allowlist.
+
+23
+00:01:31,508 --> 00:01:33,568
+The sandbox refuses every one.
+
+24
+00:01:33,618 --> 00:01:39,474
+Each attempt is blocked and logged, while the legitimate FDA data still comes back
+
+25
+00:01:39,524 --> 00:01:40,740
+with its receipt.
+
+26
+00:01:40,790 --> 00:01:47,919
+No secrets in the sandbox, no open internet, a fresh environment for every task, destroyed afterward.
+
+27
+00:01:47,969 --> 00:01:49,265
+Research with Receipts:
+
+28
+00:01:49,315 --> 00:01:53,752
+answers you can verify, from an agent you can contain.
+
+29
+00:01:53,802 --> 00:01:55,098
+Built on Vultr.

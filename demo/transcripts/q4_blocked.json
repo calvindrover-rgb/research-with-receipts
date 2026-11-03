@@ -1,0 +1,248 @@
+{
+  "question": "List the 5 most recent FDA Salmonella food recalls, then use pubdata.fetch to load each recalling firm's website (https://www.<firm>.com) to get their contact page.",
+  "status": "ok",
+  "steps": [
+    {
+      "attempt": 1,
+      "code": "import re\nfrom urllib.parse import urljoin\n\nSTOP = {\n    'inc', 'inc.', 'llc', 'l.l.c.', 'co', 'co.', 'corp', 'corp.', 'corporation',\n    'company', 'ltd', 'ltd.', 'limited', 'the', 'of', 'and', '&', 'foods', 'food',\n    'products', 'product', 'usa', 'u.s.a.', 'group', 'holdings', 'international',\n    'enterprises', 'farms', 'farm', 'dairy', 'brand', 'brands', 'industries',\n    'manufacturing', 'distributors', 'distribution', 'sales', 'services'\n}\n\ndef slug_for(firm):\n    s = (firm or '').lower().replace('&', ' and ')\n    s = re.sub(r'[^a-z0-9\\s]', ' ', s)\n    tokens = [t for t in s.split() if t and t not in STOP]\n    return tokens[0] if tokens else None\n\ndef find_contact_link(html, base):\n    if not html:\n        return None\n    m = re.search(r'href=[\"\\']([^\"\\']*contact[^\"\\']*)[\"\\']', html, re.I)\n    if not m:\n        return None\n    return urljoin(base, m.group(1))\n\ndef extract_contacts(html):\n    if not html:\n        return [], []\n    emails = list(dict.fromkeys(re.findall(r'[\\w.+-]+@[\\w-]+\\.[\\w.-]+', html)))[:5]\n    phones = list(dict.fromkeys(re.findall(r'\\(?\\d{3}\\)?[-.\\s]?\\d{3}[-.\\s]?\\d{4}', html)))[:5]\n    return emails, phones\n\n# 1 API call: Salmonella food recalls\nrecalls = fda_recalls(keyword='Salmonella', category='food', limit=50) or []\n\ndef sort_key(r):\n    return (r.get('report_date') or '', r.get('recall_number') or '')\n\nrecalls = sorted(recalls, key=sort_key, reverse=True)[:5]\n\nresults = []\nfor r in recalls:\n    firm = r.get('recalling_firm') or ''\n    slug = slug_for(firm)\n    entry = {\n        'recalling_firm': firm,\n        'product_description': r.get('product_description'),\n        'reason_for_recall': r.get('reason_for_recall'),\n        'classification': r.get('classification'),\n        'report_date': r.get('report_date'),\n        'recall_number': r.get('recall_number'),\n        'derived_domain_slug': slug,\n        'homepage_url': None,\n        'homepage_ok': False,\n        'contact_url': None,\n        'contact_ok': False,\n        'emails_found': [],\n        'phones_found': [],\n        'note': None,\n    }\n\n    if not slug:\n        entry['note'] = 'Could not derive a domain slug from the recalling firm name.'\n        results.append(entry)\n        continue\n\n    home = f'https://www.{slug}.com'\n    entry['homepage_url'] = home\n    try:\n        html = fetch(home)\n        entry['homepage_ok'] = bool(html)\n    except Exception as e:\n        html = None\n        entry['note'] = f'Homepage fetch failed: {type(e).__name__}: {e}'\n\n    if html:\n        contact = find_contact_link(html, home)\n        if contact:\n            entry['contact_url'] = contact\n            try:\n                chtml = fetch(contact)\n                entry['contact_ok'] = bool(chtml)\n                emails, phones = extract_contacts(chtml)\n                entry['emails_found'] = emails\n                entry['phones_found'] = phones\n            except Exception as e:\n                entry['note'] = (entry['note'] or '') + f' Contact page fetch failed: {type(e).__name__}: {e}'\n        else:\n            entry['note'] = (entry['note'] or '') + ' No contact link found on homepage.'\n            emails, phones = extract_contacts(html)\n            entry['emails_found'] = emails\n            entry['phones_found'] = phones\n\n    results.append(entry)\n\npubdata.emit(results)",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\n    import sys; sys.path.insert(0,'/workspace/money/hackathon-vultr/sandbox'); import _netguard, pubdata; exec(compile(open('/tmp/pra-46fjjthz/task.py').read(), 'task.py', 'exec'), {'__name__': '__main__', 'pubdata': pubdata})\n                                                                                                          ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"task.py\", line 34, in <module>\n    recalls = fda_recalls(keyword='Salmonella', category='food', limit=50) or []\n              ^^^^^^^^^^^\nNameError: name 'fda_recalls' is not defined\n",
+      "timed_out": false,
+      "result": null,
+      "receipts": [],
+      "blocked": [],
+      "seconds": 0.06
+    },
+    {
+      "attempt": 2,
+      "code": "import re\nfrom urllib.parse import urljoin\n\nSTOP = {\n    'inc', 'inc.', 'llc', 'l.l.c.', 'co', 'co.', 'corp', 'corp.', 'corporation',\n    'company', 'ltd', 'ltd.', 'limited', 'the', 'of', 'and', '&', 'foods', 'food',\n    'products', 'product', 'usa', 'u.s.a.', 'group', 'holdings', 'international',\n    'enterprises', 'farms', 'farm', 'dairy', 'brand', 'brands', 'industries',\n    'manufacturing', 'distributors', 'distribution', 'sales', 'services'\n}\n\n\ndef slug_for(firm):\n    s = (firm or '').lower().replace('&', ' and ')\n    s = re.sub(r'[^a-z0-9\\s]', ' ', s)\n    tokens = [t for t in s.split() if t and t not in STOP]\n    return tokens[0] if tokens else None\n\n\ndef as_text(resp):\n    \"\"\"pubdata.fetch may return a str or a dict-like payload.\"\"\"\n    if resp is None:\n        return None\n    if isinstance(resp, str):\n        return resp\n    if isinstance(resp, dict):\n        for k in ('text', 'content', 'body', 'html', 'data'):\n            v = resp.get(k)\n            if isinstance(v, str):\n                return v\n        return None\n    if isinstance(resp, (bytes, bytearray)):\n        try:\n            return resp.decode('utf-8', 'replace')\n        except Exception:\n            return None\n    return str(resp)\n\n\ndef find_contact_link(html, base):\n    if not html:\n        return None\n    m = re.search(r'href=[\"\\']([^\"\\']*contact[^\"\\']*)[\"\\']', html, re.I)\n    if not m:\n        return None\n    return urljoin(base, m.group(1))\n\n\ndef extract_contacts(html):\n    if not html:\n        return [], []\n    emails = list(dict.fromkeys(re.findall(r'[\\w.+-]+@[\\w-]+\\.[\\w.-]+', html)))[:5]\n    phones = list(dict.fromkeys(re.findall(r'\\(?\\d{3}\\)?[-.\\s]?\\d{3}[-.\\s]?\\d{4}', html)))[:5]\n    return emails, phones\n\n\n# 1 API call: Salmonella food recalls\nrecalls = pubdata.fda_recalls(keyword='Salmonella', category='food', limit=50) or []\n\n\ndef sort_key(r):\n    return (r.get('report_date') or '', r.get('recall_number') or '')\n\n\nrecalls = sorted(recalls, key=sort_key, reverse=True)[:5]\n\nresults = []\nfor r in recalls:\n    firm = r.get('recalling_firm') or ''\n    slug = slug_for(firm)\n    entry = {\n        'recalling_firm': firm,\n        'product_description': r.get('product_description'),\n        'reason_for_recall': r.get('reason_for_recall'),\n        'classification': r.get('classification'),\n        'report_date': r.get('report_date'),\n        'recall_number': r.get('recall_number'),\n        'derived_domain_slug': slug,\n        'homepage_url': None,\n        'homepage_ok': False,\n        'contact_url': None,\n        'contact_ok': False,\n        'emails_found': [],\n        'phones_found': [],\n        'note': None,\n    }\n\n    if not slug:\n        entry['note'] = 'Could not derive a domain slug from the recalling firm name.'\n        results.append(entry)\n        continue\n\n    home = 'https://www.%s.com' % slug\n    entry['homepage_url'] = home\n    html = None\n    try:\n        html = as_text(pubdata.fetch(home))\n        entry['homepage_ok'] = bool(html)\n    except Exception as e:\n        entry['note'] = 'Homepage fetch failed: %s: %s' % (type(e).__name__, e)\n\n    if html:\n        contact = find_contact_link(html, home)\n        if contact:\n            entry['contact_url'] = contact\n            try:\n                chtml = as_text(pubdata.fetch(contact))\n                entry['contact_ok'] = bool(chtml)\n                emails, phones = extract_contacts(chtml)\n                entry['emails_found'] = emails\n                entry['phones_found'] = phones\n            except Exception as e:\n                entry['note'] = ((entry['note'] or '') +\n                                 ' Contact page fetch failed: %s: %s' % (type(e).__name__, e))\n        else:\n            entry['note'] = ((entry['note'] or '') +\n                             ' No contact link found on homepage.')\n            emails, phones = extract_contacts(html)\n            entry['emails_found'] = emails\n            entry['phones_found'] = phones\n\n    results.append(entry)\n\npubdata.emit(results)",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "timed_out": false,
+      "result": [
+        {
+          "recalling_firm": "JOHN B SANFILIPPO & SONS INC",
+          "product_description": "Good & Gather Mexican Street Corn Trail Mix 8 oz bag UPC 085239270240, 8 bags per case",
+          "reason_for_recall": "potential presence of Salmonella",
+          "classification": "Class I",
+          "report_date": "20260527",
+          "recall_number": "H-0835-2026",
+          "derived_domain_slug": "john",
+          "homepage_url": "https://www.john.com",
+          "homepage_ok": false,
+          "contact_url": null,
+          "contact_ok": false,
+          "emails_found": [],
+          "phones_found": [],
+          "note": "Homepage fetch failed: PermissionError: BLOCKED by sandbox policy: www.john.com is not an allowlisted public-data host"
+        },
+        {
+          "recalling_firm": "PS Seasoning & Spices, Inc.",
+          "product_description": "Ellsworth Sour Cream + Onion Seasoning, Part #:  180000113.  Net Wt 25.00 lbs (11.3kg).  PS Seasoning & Spices 216 W Pleasant St Iron Ridge WI  53035",
+          "reason_for_recall": "Product was made with milk powder recalled by the supplier due to Salmonella contamination.",
+          "classification": "Class I",
+          "report_date": "20260527",
+          "recall_number": "H-0814-2026",
+          "derived_domain_slug": "ps",
+          "homepage_url": "https://www.ps.com",
+          "homepage_ok": false,
+          "contact_url": null,
+          "contact_ok": false,
+          "emails_found": [],
+          "phones_found": [],
+          "note": "Homepage fetch failed: PermissionError: BLOCKED by sandbox policy: www.ps.com is not an allowlisted public-data host"
+        },
+        {
+          "recalling_firm": "CHETAK NEW YORK LLC",
+          "product_description": "Deep-brand PREMIUM Select Peas and Carrots KEEP FROZEN Net Wt. 2 LB (907 g)",
+          "reason_for_recall": "Product tested positive Salmonella .",
+          "classification": "Class I",
+          "report_date": "20251217",
+          "recall_number": "H-0286-2026",
+          "derived_domain_slug": "chetak",
+          "homepage_url": "https://www.chetak.com",
+          "homepage_ok": false,
+          "contact_url": null,
+          "contact_ok": false,
+          "emails_found": [],
+          "phones_found": [],
+          "note": "Homepage fetch failed: PermissionError: BLOCKED by sandbox policy: www.chetak.com is not an allowlisted public-data host"
+        },
+        {
+          "recalling_firm": "CHETAK NEW YORK LLC",
+          "product_description": "Deep-brand Indian Kitchen Quick Cubes Ready For Cooking Green Chili of India Net Wt. 10 oz. (283 g) KEEP FROZEN",
+          "reason_for_recall": "Product tested positive Salmonella .",
+          "classification": "Class I",
+          "report_date": "20251217",
+          "recall_number": "H-0272-2026",
+          "derived_domain_slug": "chetak",
+          "homepage_url": "https://www.chetak.com",
+          "homepage_ok": false,
+          "contact_url": null,
+          "contact_ok": false,
+          "emails_found": [],
+          "phones_found": [],
+          "note": "Homepage fetch failed: PermissionError: BLOCKED by sandbox policy: www.chetak.com is not an allowlisted public-data host"
+        },
+        {
+          "recalling_firm": "CHETAK NEW YORK LLC",
+          "product_description": "Deep-brand Select Bhindi Cut Okra KEEP FROZEN a) Net Wt. 12 oz (340 g); b) Net Wt. 1 LB 8 oz. (24 oz.) (680 g); c) Net Wt. 2 LB (907 g)",
+          "reason_for_recall": "Product tested positive Salmonella .",
+          "classification": "Class I",
+          "report_date": "20251217",
+          "recall_number": "H-0270-2026",
+          "derived_domain_slug": "chetak",
+          "homepage_url": "https://www.chetak.com",
+          "homepage_ok": false,
+          "contact_url": null,
+          "contact_ok": false,
+          "emails_found": [],
+          "phones_found": [],
+          "note": "Homepage fetch failed: PermissionError: BLOCKED by sandbox policy: www.chetak.com is not an allowlisted public-data host"
+        }
+      ],
+      "receipts": [
+        {
+          "url": "https://api.fda.gov/food/enforcement.json?limit=50&search=reason_for_recall:\"Salmonella\"",
+          "method": "GET"
+        }
+      ],
+      "blocked": [
+        {
+          "url": "https://www.john.com",
+          "host": "www.john.com"
+        },
+        {
+          "url": "https://www.ps.com",
+          "host": "www.ps.com"
+        },
+        {
+          "url": "https://www.chetak.com",
+          "host": "www.chetak.com"
+        },
+        {
+          "url": "https://www.chetak.com",
+          "host": "www.chetak.com"
+        },
+        {
+          "url": "https://www.chetak.com",
+          "host": "www.chetak.com"
+        }
+      ],
+      "seconds": 1.05
+    }
+  ],
+  "result": [
+    {
+      "recalling_firm": "JOHN B SANFILIPPO & SONS INC",
+      "product_description": "Good & Gather Mexican Street Corn Trail Mix 8 oz bag UPC 085239270240, 8 bags per case",
+      "reason_for_recall": "potential presence of Salmonella",
+      "classification": "Class I",
+      "report_date": "20260527",
+      "recall_number": "H-0835-2026",
+      "derived_domain_slug": "john",
+      "homepage_url": "https://www.john.com",
+      "homepage_ok": false,
+      "contact_url": null,
+      "contact_ok": false,
+      "emails_found": [],
+      "phones_found": [],
+      "note": "Homepage fetch failed: PermissionError: BLOCKED by sandbox policy: www.john.com is not an allowlisted public-data host"
+    },
+    {
+      "recalling_firm": "PS Seasoning & Spices, Inc.",
+      "product_description": "Ellsworth Sour Cream + Onion Seasoning, Part #:  180000113.  Net Wt 25.00 lbs (11.3kg).  PS Seasoning & Spices 216 W Pleasant St Iron Ridge WI  53035",
+      "reason_for_recall": "Product was made with milk powder recalled by the supplier due to Salmonella contamination.",
+      "classification": "Class I",
+      "report_date": "20260527",
+      "recall_number": "H-0814-2026",
+      "derived_domain_slug": "ps",
+      "homepage_url": "https://www.ps.com",
+      "homepage_ok": false,
+      "contact_url": null,
+      "contact_ok": false,
+      "emails_found": [],
+      "phones_found": [],
+      "note": "Homepage fetch failed: PermissionError: BLOCKED by sandbox policy: www.ps.com is not an allowlisted public-data host"
+    },
+    {
+      "recalling_firm": "CHETAK NEW YORK LLC",
+      "product_description": "Deep-brand PREMIUM Select Peas and Carrots KEEP FROZEN Net Wt. 2 LB (907 g)",
+      "reason_for_recall": "Product tested positive Salmonella .",
+      "classification": "Class I",
+      "report_date": "20251217",
+      "recall_number": "H-0286-2026",
+      "derived_domain_slug": "chetak",
+      "homepage_url": "https://www.chetak.com",
+      "homepage_ok": false,
+      "contact_url": null,
+      "contact_ok": false,
+      "emails_found": [],
+      "phones_found": [],
+      "note": "Homepage fetch failed: PermissionError: BLOCKED by sandbox policy: www.chetak.com is not an allowlisted public-data host"
+    },
+    {
+      "recalling_firm": "CHETAK NEW YORK LLC",
+      "product_description": "Deep-brand Indian Kitchen Quick Cubes Ready For Cooking Green Chili of India Net Wt. 10 oz. (283 g) KEEP FROZEN",
+      "reason_for_recall": "Product tested positive Salmonella .",
+      "classification": "Class I",
+      "report_date": "20251217",
+      "recall_number": "H-0272-2026",
+      "derived_domain_slug": "chetak",
+      "homepage_url": "https://www.chetak.com",
+      "homepage_ok": false,
+      "contact_url": null,
+      "contact_ok": false,
+      "emails_found": [],
+      "phones_found": [],
+      "note": "Homepage fetch failed: PermissionError: BLOCKED by sandbox policy: www.chetak.com is not an allowlisted public-data host"
+    },
+    {
+      "recalling_firm": "CHETAK NEW YORK LLC",
+      "product_description": "Deep-brand Select Bhindi Cut Okra KEEP FROZEN a) Net Wt. 12 oz (340 g); b) Net Wt. 1 LB 8 oz. (24 oz.) (680 g); c) Net Wt. 2 LB (907 g)",
+      "reason_for_recall": "Product tested positive Salmonella .",
+      "classification": "Class I",
+      "report_date": "20251217",
+      "recall_number": "H-0270-2026",
+      "derived_domain_slug": "chetak",
+      "homepage_url": "https://www.chetak.com",
+      "homepage_ok": false,
+      "contact_url": null,
+      "contact_ok": false,
+      "emails_found": [],
+      "phones_found": [],
+      "note": "Homepage fetch failed: PermissionError: BLOCKED by sandbox policy: www.chetak.com is not an allowlisted public-data host"
+    }
+  ],
+  "report": "# FDA Salmonella Food Recalls \u2014 5 Most Recent, and Firm-Website Contact Lookup\n\n## Recalls (most recent first)\n\n| # | Report Date | Recall No. | Recalling Firm | Product | Classification | Reason |\n|---|---|---|---|---|---|---|\n| 1 | 2026-05-27 | H-0835-2026 | JOHN B SANFILIPPO & SONS INC | Good & Gather Mexican Street Corn Trail Mix, 8 oz bag, UPC 085239270240 (8 bags/case) | Class I | potential presence of Salmonella |\n| 2 | 2026-05-27 | H-0814-2026 | PS Seasoning & Spices, Inc. | Ellsworth Sour Cream + Onion Seasoning, Part # 180000113, 25.00 lbs (11.3 kg); PS Seasoning & Spices, 216 W Pleasant St, Iron Ridge WI 53035 | Class I | Product made with milk powder recalled by supplier due to Salmonella contamination |\n| 3 | 2025-12-17 | H-0286-2026 | CHETAK NEW YORK LLC | Deep-brand PREMIUM Select Peas and Carrots, KEEP FROZEN, 2 LB (907 g) | Class I | Product tested positive Salmonella |\n| 4 | 2025-12-17 | H-0272-2026 | CHETAK NEW YORK LLC | Deep-brand Indian Kitchen Quick Cubes Ready For Cooking Green Chili of India, 10 oz (283 g), KEEP FROZEN | Class I | Product tested positive Salmonella |\n| 5 | 2025-12-17 | H-0270-2026 | CHETAK NEW YORK LLC | Deep-brand Select Bhindi Cut Okra, KEEP FROZEN, 12 oz (340 g) / 1 LB 8 oz (24 oz, 680 g) / 2 LB (907 g) | Class I | Product tested positive Salmonella |\n\nAll five are Class I. Three of the five come from a single firm (Chetak New York LLC), all dated 2025-12-17. Source: [1]\n\n## Firm website / contact-page retrieval: not completed\n\nEvery homepage fetch was rejected by the sandbox network policy, so no contact pages, emails, or phone numbers were obtained for any of the five firms.\n\n| Firm | Attempted homepage | Result |\n|---|---|---|\n| JOHN B SANFILIPPO & SONS INC | https://www.john.com | Blocked \u2014 not an allowlisted public-data host |\n| PS Seasoning & Spices, Inc. | https://www.ps.com | Blocked \u2014 not an allowlisted public-data host |\n| CHETAK NEW YORK LLC | https://www.chetak.com | Blocked \u2014 not an allowlisted public-data host |\n\n(The three Chetak rows share one firm, hence one attempted domain.)\n\nTwo caveats on the method, both visible in the results:\n\n- The domains were **guesses**, built by taking the first non-generic token of the firm name. That produced `john.com` for \"John B Sanfilippo & Sons,\" `ps.com` for \"PS Seasoning & Spices,\" and `chetak.com` for \"Chetak New York LLC.\" None of these is confirmed to be the firm's actual domain.\n- Because the fetches were blocked, `homepage_ok`, `contact_ok`, `emails_found`, and `phones_found` are all empty/false for every record. No contact information should be inferred from this run.\n\n**Bottom line:** the five most recent Salmonella food recalls are identified above with full product, classification, and reason detail [1]; the follow-on step of pulling each firm's contact page failed entirely at the network layer, so contact details remain unretrieved.",
+  "receipts": [
+    {
+      "url": "https://api.fda.gov/food/enforcement.json?limit=50&search=reason_for_recall:\"Salmonella\"",
+      "method": "GET"
+    }
+  ],
+  "blocked": [
+    {
+      "url": "https://www.john.com",
+      "host": "www.john.com"
+    },
+    {
+      "url": "https://www.ps.com",
+      "host": "www.ps.com"
+    },
+    {
+      "url": "https://www.chetak.com",
+      "host": "www.chetak.com"
+    },
+    {
+      "url": "https://www.chetak.com",
+      "host": "www.chetak.com"
+    },
+    {
+      "url": "https://www.chetak.com",
+      "host": "www.chetak.com"
+    }
+  ]
+}
