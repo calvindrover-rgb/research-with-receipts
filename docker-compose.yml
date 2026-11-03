@@ -6,7 +6,7 @@ services:
   egress-proxy:
     build: { context: ./proxy, dockerfile_inline: "FROM python:3.12-slim\nCOPY proxy.py /p.py\nCMD [\"python\",\"/p.py\"]" }
     environment:
-      ALLOW_HOSTS: api.fda.gov,api.nhtsa.gov,efts.sec.gov,data.sec.gov,api.usaspending.gov,www.federalregister.gov,geocoding.geo.census.gov,data-api.ecb.europa.eu
+      ALLOW_HOSTS: api.fda.gov,datahub.transportation.gov,api.nhtsa.gov,efts.sec.gov,data.sec.gov,api.usaspending.gov,www.federalregister.gov,geocoding.geo.census.gov,data-api.ecb.europa.eu
     networks: [sandbox_net, default]
   web:
     build: .
